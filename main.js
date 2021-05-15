@@ -1,5 +1,7 @@
 const express = require("express");
 const app = express();
+// const uuidv4 =require("uuidv4");
+// uuid=uuidv4();
 const port = 5000;
 app.use(express.json());
 const articles = [
@@ -30,6 +32,19 @@ const getAllArticles = (req, res) => {
     res.json(articles);
 };
 app.get("/articles", getAllArticles);
+const getArticlesByAuthor= (req, res) => {
+    const arr=[]
+    const auth = req.query.author;
+    articles.forEach((element) => {
+        if (element.author === auth) {
+            arr.push(element);
+        } ;
+    });
+    res.json(arr);
+};
+app.get("/articles/search_1",getArticlesByAuthor)
+
+console.log("ddddd")
 app.listen(port, () => {
     console.log(`the server run the port ${port}`);
 });
