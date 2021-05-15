@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const uuidv4 = require("uuidv4");
+const { uuid } = require("uuidv4");
 const port = 5000;
 app.use(express.json());
 const articles = [
@@ -51,9 +51,32 @@ const getArticlesById = (req, res) => {
             arr.push(element);
         };
     });
-     res.json(arr);
+    res.json(arr);
 };
-app.get("/articles/search_2", getArticlesById)
+app.get("/articles/search_2", getArticlesById);
+const createNewArticle = (req, res) => {
+    const newArticles = {
+        titale: req.body.title,
+        description: req.body.description,
+        author: req.body.author,
+        id: uuid()
+    };
+    const found = users.find((element) => {
+        return element.id === ne;
+    });
+
+    if (found) {
+        res.status(404);
+        res.json("id is ");
+        res.json(found);
+    }
+    else {
+        articles.push(newArticles);
+    };
+    res.status(200);
+    res.json(newArticles);
+};
+app.post("/articles", createNewArticle)
 console.log("ddddd")
 app.listen(port, () => {
     console.log(`the server run the port ${port}`);
