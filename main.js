@@ -34,7 +34,7 @@ const getAllArticles = (req, res) => {
     res.json(articles);
 };
 //////////////////////////////////////////////////////////////////////////////////////
-// get articles by id
+// get articles by author
 app.get("/articles", getAllArticles);
 const getArticlesByAuthor = (req, res) => {
     res.status(200);
@@ -45,22 +45,19 @@ const getArticlesByAuthor = (req, res) => {
             arr.push(element);
         };
     });
-    res.json(arr)
+    res.json(arr);
 };
+app.get("/articles/search_1", getArticlesByAuthor);
 //////////////////////////////////////////////////////////////////////////////////////
-// get articles by author
-app.get("/articles/search_1", getArticlesByAuthor)
+// get articles by id
 const getArticlesById = (req, res) => {
     res.status(200);
     const idArt = req.query.id;
-    const arr = []
-    console.log(idArt)
-    articles.forEach((element) => {
-        if (JSON.stringify(element.id) === idArt) {
-            arr.push(element);
-        };
+    console.log(idArt);
+    const article = articles.find((element) => {
+        return element.id == idArt;
     });
-    res.json(arr);
+    res.json(article);
 };
 app.get("/articles/search_2", getArticlesById);
 //////////////////////////////////////////////////////////////////////////////////////
@@ -85,34 +82,58 @@ const createNewArticle = (req, res) => {
     res.status(200);
     res.json(newArticles);
 };
-app.post("/articles", createNewArticle)
+app.post("/articles", createNewArticle);
 //////////////////////////////////////////////////////////////////////////////////////
 //   update an article by id
 app.put("/articles/:id", (req, res) => {
+    let i;
+    const found = articles.find((element, index) => {
+        i = index;
+        return element.id == req.params.id;
+    });
+    if (found) (
+        articles[i] = {
+            id: req.params.id,
+            title: req.body.title,
+            description: req.body.description,
+            author: req.body.author
+        }
+    );
     res.status(200);
-
-
-
+    res.json(articles[i]);
 })
 //////////////////////////////////////////////////////////////////////////////////////
 // delete articles by id
 const deleteArticleById = (req, res) => {
+    const idDelet = req.params.id;
     const deleteMassage = {
         "success": true,
-        "massage": "Success Delete article with id => articleId"
-    }
-    const idDelet = req.params.id;
-    console.log(idDelet)
+        "massage": `Success Delete article with id => ${idDelet}`
+    };
     const newArticles = articles.filter(element => {
-        console.log(element.id)
+        console.log(element.id);
         return JSON.stringify(element.id) !== idDelet;
-    })
-    res.json(deleteMassage)
-    articles = [...newArticles]
+    });
+    res.json(deleteMassage);
+    articles = [...newArticles];
 };
-app.delete("/articles/:id", deleteArticleById)
-
-console.log("ddddd")
+app.delete("/articles/:id", deleteArticleById);
+//////////////////////////////////////////////////////////////////////////////////////
+// delete articles by author
+const deleteArticlesByAuthor = (req, res) => {
+    const authorDelete = req.query.author;
+    const deleteMassage = {
+        "success": true,
+        "massage": `Success delete all the articles for the author => ${authorDelete}`
+    };
+    const newArticles = articles.filter(element => {
+        console.log(element.author);
+        return element.author !== authorDelete;
+    })
+    res.json(deleteMassage);
+    articles = [...newArticles];
+};
+app.delete("/articles", deleteArticlesByAuthor);
 app.listen(port, () => {
     console.log(`the server run the port ${port}`);
 });
