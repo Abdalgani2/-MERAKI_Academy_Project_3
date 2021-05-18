@@ -2,11 +2,13 @@
 const express = require("express");
 const app = express();
 const db = require("./db");
-const { User, Articles } = require("./schema");
+const { User, Articles, Comments } = require("./schema");
 const { uuid } = require("uuidv4");
 const port = 5000;
 app.use(express.json());
-app.post("/users", (req, res) => {
+// //////////////////////////////////////////////////////////////////////////////////////
+// // create new user
+const createNewAuthor = (req, res) => {
     const { firstName, lastName, age, country, email, password } = req.body
     const user = new User(
         { firstName, lastName, age, country, email, password }
@@ -19,7 +21,42 @@ app.post("/users", (req, res) => {
             res.send(err);
         });
 
-})
+}
+app.post("/users", createNewAuthor)
+// //////////////////////////////////////////////////////////////////////////////////////
+// // login
+const login=(req, res) => {
+    const email = req.body.email;
+    const password = req.body.password;
+    const found = User.findOne({ email: email, password: password }).then((result) => {
+        if (result == null) {
+            res.json("Invalid login credentials");
+            res.status(201);
+        }
+        else {
+            res.json(" valid login credentials");
+            res.status(401);
+        }
+    });
+};
+app.post("/login", login);
+// //////////////////////////////////////////////////////////////////////////////////////
+// // create new comment 
+const createNewComment =(req,res) => {
+    const comment  = req.body.comment
+    const commenter=req.params.id;
+    const newComment = new Comments(
+        { comment,commenter  }
+    )
+    newComment.save()
+        .then((result) => {
+            res.json(result);
+        })
+        .catch((err) => {
+            res.send(err);
+        }
+}
+app.post("/articles/:id/comments",createNewComment);
 // //////////////////////////////////////////////////////////////////////////////////////
 // // create new article
 const createNewArticle = async (req, res) => {
@@ -80,39 +117,34 @@ const getArticlesById = (req, res) => {
 app.get("/articles/search_2", getArticlesById);
 //////////////////////////////////////////////////////////////////////////////////////
 // // delete articles by id
-const deleteArticleById = (req, res) => {
+const deleteArticleById = async (req, res) => {
     const idDelete = req.params.id;
-    const articleDelete =Articles.find({ _id: idDelete });
+    await Articles.deleteOne({ _id: idDelete });
     const deleteMassage = {
         "success": true,
         "massage": `Success Delete article with id => ${idDelete}`
     };
-    articleDelete.remove();
-   res.json(deleteMassage)
+    res.json(deleteMassage)
 };
 app.delete("/articles/:id", deleteArticleById);
 //////////////////////////////////////////////////////////////////////////////////////
 // // delete articles by author
-const deleteArticleByAuthor = (req, res) => {
-    const authorDelete = req.params.id;
-    const articleDelete =Articles.find({ author: authotDelete });
+const deleteArticleByAuthor = async (req, res) => {
+    const authorDelete = req.query.author;
+    await Articles.deleteMany({ author: authorDelete });
     const deleteMassage = {
         "success": true,
-        "massage": `Success Delete article with id => ${idDelete}`
+        "massage": `Success Delete article with id => ${authorDelete}`
     };
-    articleDelete.remove();
-   res.json(deleteMassage)
+    res.json(deleteMassage)
 };
-app.delete("/articles/:id", deleteArticleByAuthor);
+app.delete("/articles", deleteArticleByAuthor);
 // //////////////////////////////////////////////////////////////////////////////////////
 // //   update an article by id
 app.put("/articles/:id", (req, res) => {
-      const idUpdate=req.params.id;
-      const articleDelete =Articles.find({ _id: idUpdate });
-    articleDelete= {description,title}=req.body
-        
-    })
-
+    const idUpdate = req.params.id;
+    Articles.update({ _id: idUpdate });
+})
 app.listen(port, () => {
     console.log(`the server run the port ${port}`);
 });
