@@ -4,12 +4,20 @@ const app = express();
 const db = require("./db");
 const { User, Articles, Comments } = require("./schema");
 const { uuid } = require("uuidv4");
+const bcrypt = require("bcrypt");
 const port = 5000;
 app.use(express.json());
 // //////////////////////////////////////////////////////////////////////////////////////
 // // create new user
-const createNewAuthor = (req, res) => {
-    const { firstName, lastName, age, country, email, password } = req.body
+const createNewAuthor = async (req, res) => {
+    const salt =10 ;
+    const { firstName, lastName, age, country } = req.body
+   
+    password1=req.body.password
+    const email1=req.body.email
+     const email=email1.toLowerCase()
+     const password = await bcrypt.hash(password1, salt);
+    
     const user = new User(
         { firstName, lastName, age, country, email, password }
     )
@@ -54,7 +62,7 @@ const createNewComment =(req,res) => {
         })
         .catch((err) => {
             res.send(err);
-        }
+        })
 }
 app.post("/articles/:id/comments",createNewComment);
 // //////////////////////////////////////////////////////////////////////////////////////
