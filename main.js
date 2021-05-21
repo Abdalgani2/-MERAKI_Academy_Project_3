@@ -2,24 +2,30 @@
 const express = require("express");
 const app = express();
 const db = require("./db");
-const { User, Articles, Comments } = require("./schema");
+const jwt = require("jsonwebtoken");
+const { User, Articles, Comments, Role } = require("./schema");
 const { uuid } = require("uuidv4");
 const bcrypt = require("bcrypt");
+require("dotenv").config();
 const port = 5000;
+const secret = process.env.SECRET
 app.use(express.json());
 // //////////////////////////////////////////////////////////////////////////////////////
 // // create new user
 const createNewAuthor = async (req, res) => {
-    const salt =10 ;
+    const salt = 10;
     const { firstName, lastName, age, country } = req.body
-   
-    password1=req.body.password
-    const email1=req.body.email
-     const email=email1.toLowerCase()
-     const password = await bcrypt.hash(password1, salt);
-    
+    password1 = req.body.password
+    const email1 = req.body.email
+    const email = email1.toLowerCase()
+    const password = await bcrypt.hash(password1, salt);
+    await Role.findOne({ role: "Admin" })
+    .then((result) => {
+      role1 = result;
+      console.log(role1);
+    })
     const user = new User(
-        { firstName, lastName, age, country, email, password }
+        { firstName, lastName, age, country, email, password,role: role1._id }
     )
     user.save()
         .then((result) => {
@@ -31,30 +37,92 @@ const createNewAuthor = async (req, res) => {
 
 }
 app.post("/users", createNewAuthor)
+app.post("/role",(req,res) => {
+   const{ role,permissions}=req.body;
+   const newRole=new Role (
+       {role,permissions}
+   )
+   newRole.save().then((result) => {
+    res.json(result);
+})
+.catch((err) => {
+    res.send(err);
+});
+
+})
 // //////////////////////////////////////////////////////////////////////////////////////
 // // login
-const login=(req, res) => {
-    const email = req.body.email;
-    const password = req.body.password;
-    const found = User.findOne({ email: email, password: password }).then((result) => {
-        if (result == null) {
-            res.json("Invalid login credentials");
-            res.status(201);
-        }
-        else {
-            res.json(" valid login credentials");
-            res.status(401);
-        }
-    });
-};
+const login = async (req, res) => {
+    const messageEmailIncorrect = {
+        "message": "the email dosent exist",
+        "status": 404
+    }
+    const messagePasswordIncorrect = {
+        "message": "the password dosent exist",
+        "status": 404
+    }
+    await Role.findOne({ role: "Admin" })
+            .then((result) => {
+              role1 = result;
+              console.log(role1);
+            })
+            const rolePayload={
+                "permissions":role1.permissions,
+                "role":role1.role
+              }
+    const email1 = req.body.email;
+    const email = email1.toLowerCase()
+    const password1 = req.body.password;
+    User.findOne({ email: email }).then((result)=>{
+       if(result==null){
+           res.json(messageEmailIncorrect)
+       }
+       if(result!=null){
+           res.json(result.password)
+       }
+    })
+
+    // User.findOne({ email: email }).then((result) => {
+    //     if (result == null) {
+    //         res.json(messageEmailIncorrect);
+    //         res.status(201);
+    //     }
+    //     else if( bcrypt.compare(password1, result.password)){      
+    //         const payload = {
+    //                         "userId": result.id,
+    //                         "country": result.contry,
+    //                         "role":rolePayload
+    //                     };
+    //                     res.json(payload)
+    //                     const options = {
+    //                         expiresIn: "1h",
+    //                     };
+    //                     const token = jwt.sign(payload, secret, options);
+    //                     // res.json(token)}
+    //                 }                
+    // })
+}
+
 app.post("/login", login);
 // //////////////////////////////////////////////////////////////////////////////////////
 // // create new comment 
-const createNewComment =(req,res) => {
-    const comment  = req.body.comment
-    const commenter=req.params.id;
+const auth = (req, res, next) => {
+    const token = req.headers.authorization.split(" ")[1];
+    jwt.verify(token, secret, (err, result) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (result) {
+        
+        next();
+      }
+    });
+  };
+const createNewComment = (req, res) => {
+    const comment = req.body.comment
+    const commenter = req.params.id;
     const newComment = new Comments(
-        { comment,commenter  }
+        { comment, commenter }
     )
     newComment.save()
         .then((result) => {
@@ -64,7 +132,7 @@ const createNewComment =(req,res) => {
             res.send(err);
         })
 }
-app.post("/articles/:id/comments",createNewComment);
+app.post("/articles/:id/comments",auth, createNewComment);
 // //////////////////////////////////////////////////////////////////////////////////////
 // // create new article
 const createNewArticle = async (req, res) => {
@@ -149,10 +217,10 @@ const deleteArticleByAuthor = async (req, res) => {
 app.delete("/articles", deleteArticleByAuthor);
 // //////////////////////////////////////////////////////////////////////////////////////
 // //   update an article by id
-app.put("/articles/:id", (req, res) => {
-    const idUpdate = req.params.id;
-    Articles.update({ _id: idUpdate });
-})
+// app.put("/articles/:id", (req, res) => {
+//     const idUpdate = req.params.id;
+//     Articles.update({ _id: idUpdate });
+// })
 app.listen(port, () => {
     console.log(`the server run the port ${port}`);
-});
+})
