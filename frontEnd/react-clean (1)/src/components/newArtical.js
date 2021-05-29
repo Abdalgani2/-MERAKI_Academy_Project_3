@@ -10,10 +10,14 @@ axios.post(`http://localhost:5000/articles`,
 {title,description},
 {headers: {
     'Authorization':`Bearer ${token}`
-    }}).then(()=>{
-        setMessage(<p>The article has been created successfully</p>)
-    }).catch(()=>{
-        setMessage(<p>Error happened while creating a new article, please try again</p>)
+    }}).then((result)=>{
+        if(result.data._message=="Articles validation failed"){
+            setMessage(<p>Error happened while creating a new article, please try again</p>)
+
+        } else{
+            setMessage(<p>The article has been created successfully</p>);
+        }
+       
     })
     }
     return (
